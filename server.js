@@ -13,11 +13,13 @@ const crypto = require("crypto");
 const {
   default: makeWASocket,
   useMultiFileAuthState,
-  Browsers
+  Browsers,
+  fetchLatestBaileysVersion
 } = require("@whiskeysockets/baileys");
 const pino = require("pino");
 
 const app = express();
+app.set("trust proxy", 1);
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
@@ -137,10 +139,14 @@ app.post("/api/pair", pairLimiter, async (req, res) => {
   const authDir = path.join(SESSIONS_DIR, token);
 
   try {
-    const { state, saveCreds } = await useMultiFileAuthState(authDir);
+        const { state, saveCreds } = await useMultiFileAuthState(authDir);
+    const { version } = await fetchLatestBaileysVersion();
+
+    console.log(`[PAIR ${token}] Using WA version:`, version);
 
     const sock = makeWASocket({
       auth: state,
+      version,
       logger: pino({ level: "silent" }),
       printQRInTerminal: false,
       browser: Browsers.ubuntu("Chrome")
